@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.IO;
 using Microsoft.AspNet.Builder;
 using Microsoft.AspNet.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -19,6 +20,9 @@ namespace WebApplication5
                 .AddJsonFile("appsettings.json")
                 .AddEnvironmentVariables();
             Configuration = builder.Build();
+
+            var imageStagingFolder = Path.Combine(Directory.GetCurrentDirectory(), "images");
+            Directory.CreateDirectory(imageStagingFolder);
         }
 
         public IConfigurationRoot Configuration { get; set; }

@@ -10,6 +10,7 @@ using Microsoft.AspNet.Mvc.Rendering;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net;
+using System.Web;
 
 // For more information on enabling MVC for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -30,36 +31,38 @@ namespace WebApplication5.Controllers
         }
 
 
-        // GET: /<controller>/FromSample?sampleName=sample1.jpg
-        public async Task<IActionResult> FromSample(string sampleName)
+        // GET: /<controller>/FromSample?sampleName=sample1.jpg&effectName=Ripple
+        public async Task<IActionResult> FromSample(string sampleName, string effectName)
         {
-            string sourceImage = Path.Combine(Directory.GetCurrentDirectory(), "images", sampleName);
+            string sourceImage = Path.Combine(_environment.WebRootPath, "images", sampleName);
 
-            await RunImpressionist(sourceImage);
+            await RunImpressionist(sourceImage, effectName);
 
             return View("Index");
         }
 
+        // POST: /<controller>/PostImage?effectName=Ripple
         [HttpPost]
-        public async Task<IActionResult> PostImage(ICollection<IFormFile> files)
+        public async Task<IActionResult> PostImage(ICollection<IFormFile> files, string effectName)
         {
+            effectName = WebUtility.HtmlDecode(effectName);
             var uploads = Path.Combine(_environment.WebRootPath, "uploads");
             var formFile = files.ElementAt(0);
 
             string fileName = "original.jpg";
-            string sourceImage = Path.Combine(Directory.GetCurrentDirectory(), "images", fileName);
+            string sourceImage = Path.Combine(_environment.WebRootPath, "images", fileName);
             formFile.SaveAs(sourceImage);
 
-            await RunImpressionist(sourceImage);
+            await RunImpressionist(sourceImage, effectName);
 
             return View("Index");
         }
 
-        private async Task RunImpressionist(string sourceImage)
+        private async Task RunImpressionist(string sourceImage, string effectName)
         {
-            var result = UploadImage(sourceImage);
+            var result = UploadImage(sourceImage, effectName);
 
-            string resultFile = Path.Combine(Directory.GetCurrentDirectory(), "images", "masterpiece.jpg");
+            string resultFile = Path.Combine(_environment.WebRootPath, "images", "masterpiece.jpg");
             using (FileStream fs = new FileStream(resultFile, FileMode.Create))
             {
                 await (result.Content as StreamContent).CopyToAsync(fs);
@@ -70,9 +73,9 @@ namespace WebApplication5.Controllers
         }
 
 
-        private static void CleanupDir()
+        private void CleanupDir()
         {
-            DirectoryInfo di = new DirectoryInfo(Directory.GetCurrentDirectory());
+            DirectoryInfo di = new DirectoryInfo(_environment.WebRootPath);
             FileInfo[] files = di.GetFiles("*.jpg")
                              .Where(p => p.Extension == ".jpg").ToArray();
 
@@ -83,8 +86,10 @@ namespace WebApplication5.Controllers
         }
 
 
-        private HttpResponseMessage UploadImage(string file)
+        private HttpResponseMessage UploadImage(string file, string effectName)
         {
+            effectName = Uri.EscapeUriString(effectName);
+
             using (var client = new HttpClient())
             {
                 var requestContent = new MultipartFormDataContent();
@@ -94,7 +99,9 @@ namespace WebApplication5.Controllers
                     MediaTypeHeaderValue.Parse("image/jpeg");
 
                 requestContent.Add(imageContent, "image", "image.jpg");
-                string url = "https://impressionist-bot.azurewebsites.net/api/commandline-http?code=xv7o09ft3zoh7g9dbnh4cxr1l6qxpd1s0xn7yfy2jfo1xajorydr1h8aq89dxsjs9jjdcxr";
+                string url = "https://impressionist-bot.azurewebsites.net/api/commandline-http?code=xv7o09ft3zoh7g9dbnh4cxr1l6qxpd1s0xn7yfy2jfo1xajorydr1h8aq89dxsjs9jjdcxr&effectName=" + effectName;
+                //string url = "https://impressionist-bot.azurewebsites.net/api/commandline-http?code=xv7o09ft3zoh7g9dbnh4cxr1l6qxpd1s0xn7yfy2jfo1xajorydr1h8aq89dxsjs9jjdcxr";
+                System.Diagnostics.Debug.WriteLine("Sending request to: " + url);
                 var result = client.PostAsync(url, requestContent).Result;
 
                 return result;
