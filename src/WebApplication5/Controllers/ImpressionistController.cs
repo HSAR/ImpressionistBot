@@ -17,17 +17,27 @@ namespace WebApplication5.Controllers
 {
     public class ImpressionistController : Controller
     {
+        private IHostingEnvironment _environment;
+        public ImpressionistController(IHostingEnvironment environment)
+        {
+            _environment = environment;
+        }
+
         // GET: /<controller>/
         public IActionResult Index()
         {
             return View();
         }
 
-        private IHostingEnvironment _environment;
 
-        public ImpressionistController(IHostingEnvironment environment)
+        // GET: /<controller>/FromSample?sampleName=sample1.jpg
+        public async Task<IActionResult> FromSample(string sampleName)
         {
-            _environment = environment;
+            string sourceImage = Path.Combine(Directory.GetCurrentDirectory(), "images", sampleName);
+
+            await RunImpressionist(sourceImage);
+
+            return View("Index");
         }
 
         [HttpPost]
@@ -36,39 +46,42 @@ namespace WebApplication5.Controllers
             var uploads = Path.Combine(_environment.WebRootPath, "uploads");
             var formFile = files.ElementAt(0);
 
-            string fileName = Guid.NewGuid() + ".jpg";
-            formFile.SaveAs(fileName);
+            string fileName = "original.jpg";
+            string sourceImage = Path.Combine(Directory.GetCurrentDirectory(), "images", fileName);
+            formFile.SaveAs(sourceImage);
 
-            string filePath = Path.Combine(Directory.GetCurrentDirectory(), fileName);
-            var result = UploadImage(filePath);
+            await RunImpressionist(sourceImage);
 
-            using (FileStream fs = new FileStream(Path.Combine(Directory.GetCurrentDirectory(), "bla.jpg"), FileMode.Create))
+            return View("Index");
+        }
+
+        private async Task RunImpressionist(string sourceImage)
+        {
+            var result = UploadImage(sourceImage);
+
+            string resultFile = Path.Combine(Directory.GetCurrentDirectory(), "images", "masterpiece.jpg");
+            using (FileStream fs = new FileStream(resultFile, FileMode.Create))
             {
                 await (result.Content as StreamContent).CopyToAsync(fs);
             }
-
-            //HttpResponseMessage response = new HttpResponseMessage();
-            //response.StatusCode = HttpStatusCode.OK;
-            //response.Content = result.Content;
-            //(response.Content as StreamContent).
-            //response.Content.Headers.ContentDisposition = new ContentDispositionHeaderValue("attachment")
-            //{
-            //    FileName = "foo.jpg"
-            //};
-            //response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-
-            //return response;
-            return View();
+            
+            this.ViewData["ResultImage"] = "masterpiece.jpg";
+            this.ViewData["OriginalImage"] = Path.GetFileName(sourceImage);
         }
 
-        //private string SaveResponseImage(HttpResponseMessage response)
-        //{
-        //    var fileStream = System.IO.File.Create(Guid.NewGuid().ToString() + ".jpg");
-        //    var stream = (response.Content as StreamContent);
-        //    stream.Seek(0, SeekOrigin.Begin);
-        //    myOtherObject.InputStream.CopyTo(fileStream);
-        //    fileStream.Close();
-        //}
+
+        private static void CleanupDir()
+        {
+            DirectoryInfo di = new DirectoryInfo(Directory.GetCurrentDirectory());
+            FileInfo[] files = di.GetFiles("*.jpg")
+                             .Where(p => p.Extension == ".jpg").ToArray();
+
+            foreach (FileInfo file in files)
+            {
+                System.IO.File.Delete(file.FullName);
+            }
+        }
+
 
         private HttpResponseMessage UploadImage(string file)
         {
@@ -93,9 +106,13 @@ namespace WebApplication5.Controllers
             byte[] imageData = null;
             FileInfo fileInfo = new FileInfo(imageLocation);
             long imageFileLength = fileInfo.Length;
-            FileStream fs = new FileStream(imageLocation, FileMode.Open, FileAccess.Read);
-            BinaryReader br = new BinaryReader(fs);
-            imageData = br.ReadBytes((int)imageFileLength);
+
+            using (FileStream fs = new FileStream(imageLocation, FileMode.Open, FileAccess.Read))
+            using (BinaryReader br = new BinaryReader(fs))
+            {
+                imageData = br.ReadBytes((int)imageFileLength);
+            }
+
             return imageData;
         }
     }
