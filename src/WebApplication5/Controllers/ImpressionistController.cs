@@ -81,7 +81,7 @@ namespace WebApplication5.Controllers
                     MediaTypeHeaderValue.Parse("image/jpeg");
 
                 requestContent.Add(imageContent, "image", "image.jpg");
-                string url = "https://functionsa2c4866e.azurewebsites.net/api/HttpTriggerCSharp1?code=jlnvuhy9vwz9hfwnogxa2lnmizy9cucy41rq15bu8yuz4u0udid7bnlwxyzg8b73zg06dewxw29";
+                string url = "https://impressionist-bot.azurewebsites.net/api/commandline-http?code=xv7o09ft3zoh7g9dbnh4cxr1l6qxpd1s0xn7yfy2jfo1xajorydr1h8aq89dxsjs9jjdcxr";
                 var result = client.PostAsync(url, requestContent).Result;
 
                 return result;
