@@ -25,29 +25,14 @@
             <input type="file" name="files" onchange="this.form.submit()" />
         </li>
     </ul>
-    <ul class="input-list">
-        <li class="instruction">2) Choose an Effect:</li>
-        <li>
-            <select name="effectName">
-                <option value="&quot;Ripple&quot;">Ripple</option>
-                <option value="&quot;Chalk And Charcoal&quot;">Chalk And Charcoal</option>
-                <option value="&quot;Cutout&quot;">Cutout</option>
-                <option value="&quot;Glowing Edges&quot;">Glowing Edges</option>
-                <option value="&quot;Graphic Pen&quot;">Graphic Pen</option>
-                <option value="&quot;Palette Knife&quot;">Palette Knife</option>
-                <option value="&quot;Patchwork&quot;">Patchwork</option>
-                <option value="&quot;Stained Glass&quot;">Stained Glass</option>
-                <option value="&quot;Watercolor&quot;">Watercolor</option>
-            </select>
-        </li>
-    </ul>
 </form>
 
-@if (ViewData["ResultImage"] != null)
+@if (ViewData["OriginalImage"] != null)
 {
-    <ul class="output-list">
-        <li class="orig_image"><img src="/images/@ViewData["OriginalImage"]" /></li>
-        <li class="processed_image"><img src="/images/@ViewData["ResultImage"]" /></li>
+    <ul class="input-list">
+        <li>Original<img style="max-width: 1000px; width:95%" src="/images/@ViewData["OriginalImage"]" /></li>
+        <li>@ViewData["ResultFilterName0"]<img style="width:95%" src="/images/@ViewData["ResultImage0"]" /></li>
+        <li>@ViewData["ResultFilterName1"]<img style="width:95%" src="/images/@ViewData["ResultImage1"]" /></li>
     </ul>
 }
 
@@ -55,15 +40,15 @@
     <script>
 
         
-        $(".sampleLink").click(function() {
+        /*$(".sampleLink").click(function() {
             $(".sampleLink").attr("href", $(this).attr("href") + '&effectName=' + $('select[name="effectName"]').val());
-        });
+        });*/
 
 
-        $("body").on("mouseenter", ".processed_image", function () {
+        /*$("body").on("mouseenter", ".processed_image", function () {
             $(this).fadeTo(100, 0);
         }).on("mouseleave", ".processed_image", function () {
             $(this).fadeTo(100, 1);
-        });
+        });*/
     </script>
 }

@@ -30,22 +30,51 @@ namespace WebApplication5.Controllers
             return View();
         }
 
+        private static IEnumerable<string> EffectNames = new List<string> {
+            "Bas Relief",
+            "Chalk And Charcoal",
+            "Charcoal",
+            "Chrome",
+            "Colored Pencil",
+            "Cutout",
+            "Diffuse Glow",
+            "Fresco",
+            //"Glass", // Requires additional texture files to be uploaded to the Azure Function
+            "Glowing Edges",
+            "Grain",
+            "Graphic Pen",
+            "Halftone Screen",
+            "Mosaic",
+            "Neon Glow",
+            "Note Paper",
+            "Palette Knife",
+            "Patchwork",
+            "Photocopy",
+            "Plastic Wrap",
+            "Poster Edges",
+            "Ripple",
+            "Spatter",
+            "Sponge",
+            "Sprayed Strokes",
+            "Stained Glass",
+            "Watercolor"
+        };
+
 
         // GET: /<controller>/FromSample?sampleName=sample1.jpg&effectName=Ripple
-        public async Task<IActionResult> FromSample(string sampleName, string effectName)
+        public async Task<IActionResult> FromSample(string sampleName)
         {
             string sourceImage = Path.Combine(_environment.WebRootPath, "images", sampleName);
 
-            await RunImpressionist(sourceImage, effectName);
+            await RunImpressionistAndBindResults(sourceImage, 2);
 
             return View("Index");
         }
 
         // POST: /<controller>/PostImage?effectName=Ripple
         [HttpPost]
-        public async Task<IActionResult> PostImage(ICollection<IFormFile> files, string effectName)
+        public async Task<IActionResult> PostImage(ICollection<IFormFile> files)
         {
-            effectName = WebUtility.HtmlDecode(effectName);
             var uploads = Path.Combine(_environment.WebRootPath, "uploads");
             var formFile = files.ElementAt(0);
 
@@ -53,23 +82,33 @@ namespace WebApplication5.Controllers
             string sourceImage = Path.Combine(_environment.WebRootPath, "images", fileName);
             formFile.SaveAs(sourceImage);
 
-            await RunImpressionist(sourceImage, effectName);
+            await RunImpressionistAndBindResults(sourceImage, 2);
 
             return View("Index");
         }
 
-        private async Task RunImpressionist(string sourceImage, string effectName)
+        private async Task RunImpressionistAndBindResults(string sourceImage, int numberOfRuns)
+        {
+            var effects = SelectRandomEffects(numberOfRuns);
+
+            for (int i = 0; i < numberOfRuns; i++)
+            {
+                await RunImpressionist(sourceImage, $"masterpiece{i}.jpg", $"\"{effects.ElementAt(i)}\"");
+                this.ViewData[$"ResultImage{i}"] = $"masterpiece{i}.jpg";
+                this.ViewData[$"ResultFilterName{i}"] = effects.ElementAt(i);
+            }
+            this.ViewData["OriginalImage"] = Path.GetFileName(sourceImage);
+        }
+
+        private async Task RunImpressionist(string sourceImage, string saveAsName, string effectName)
         {
             var result = UploadImage(sourceImage, effectName);
 
-            string resultFile = Path.Combine(_environment.WebRootPath, "images", "masterpiece.jpg");
+            string resultFile = Path.Combine(_environment.WebRootPath, "images", saveAsName);
             using (FileStream fs = new FileStream(resultFile, FileMode.Create))
             {
                 await (result.Content as StreamContent).CopyToAsync(fs);
             }
-            
-            this.ViewData["ResultImage"] = "masterpiece.jpg";
-            this.ViewData["OriginalImage"] = Path.GetFileName(sourceImage);
         }
 
 
@@ -121,6 +160,24 @@ namespace WebApplication5.Controllers
             }
 
             return imageData;
+        }
+
+        private static IEnumerable<string> SelectRandomEffects(int numEffects)
+        {
+            Random rand = new Random();
+
+            var result = new List<string>(numEffects);
+            while (result.Count() < numEffects)
+            {
+                var remainingEffects = EffectNames.ToArray<string>().Except(result);
+                string newEffect = remainingEffects.ElementAt(rand.Next(0, remainingEffects.Count()));
+                if (!result.Contains(newEffect))
+                {
+                    result.Add(newEffect);
+                }
+            }
+
+            return result;
         }
     }
 
